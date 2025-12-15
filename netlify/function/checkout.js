@@ -1,18 +1,13 @@
-// netlify/functions/checkout.js
-// 这是一个 Netlify Serverless Function
+// 导入 Stripe 库
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// 引入 Stripe 库
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); 
+// 定义您要使用的 Stripe Price ID
+// ⚠️ 注意：这个 ID 必须和您在 Stripe 后台（测试模式）创建的价格 ID 完全匹配。
+const PRO_MONTHLY_PRICE_ID = 'price_1SeeyzGpbs4hTZTLeORhlcoV'; 
 
-// ** 替换为您的真实 Stripe Price ID **
-// 请在 Stripe 后台创建这两个产品并获取 ID
-const PRICE_IDS = {
-  monthly: 'price_xxxxxxxxxxxx', // 替换为你的月订阅 Price ID
-  lifetime: 'price_yyyyyyyyyyyy', // 替换为你的买断 Price ID
-};
-
+// Netlify Function 的主处理程序
 exports.handler = async (event, context) => {
-  // 只处理 POST 请求
+  // 确保请求方法是 POST
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -21,46 +16,55 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // 从前端获取计划类型
-    const { planType } = JSON.parse(event.body); 
+    // 解析前端发送的请求体
+    const { priceId } = JSON.parse(event.body);
 
-    const priceId = PRICE_IDS[planType];
-    const mode = planType === 'monthly' ? 'subscription' : 'payment';
+    // 检查前端请求的价格 ID 是否有效，确保只使用我们定义的 ID
+    let finalPriceId = '';
 
-    if (!priceId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid plan type provided.' }),
-      };
+    if (priceId === 'monthly') {
+      finalPriceId = PRO_MONTHLY_PRICE_ID;
+    } 
+    // 您也可以在这里添加 Lifetime Deal 的逻辑
+    // else if (priceId === 'lifetime') {
+    //   finalPriceId = LIFETIME_PRICE_ID; 
+    // } 
+    else {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Invalid Price Selection' }),
+        };
     }
 
-    // 获取部署的域名作为返回地址的基础
-    const domain = event.headers.host;
-    const successUrl = `https://${domain}/?payment=success`;
-    const cancelUrl = `https://${domain}/?payment=canceled`;
 
-    // 创建 Checkout Session
+    // 创建 Stripe 结账会话
     const session = await stripe.checkout.sessions.create({
-      line_items: [{
-        price: priceId,
-        quantity: 1,
-      }],
-      mode: mode,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: finalPriceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription', // 如果是月付订阅，使用 subscription 模式
+      // mode: 'payment', // 如果是终身购买，使用 payment 模式
+
+      // 成功和失败后的重定向 URL，请替换成您的网站地址
+      success_url: `${process.env.URL}/?success=true`,
+      cancel_url: `${process.env.URL}/?canceled=true`,
     });
 
-    // 返回 Stripe 结账页面的 URL
+    // 返回会话 ID 给前端
     return {
       statusCode: 200,
-      body: JSON.stringify({ url: session.url }),
+      body: JSON.stringify({ sessionId: session.id }),
     };
 
   } catch (error) {
-    console.error('Stripe API Error:', error);
+    console.error('Stripe Session Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: 'Failed to create checkout session' }),
     };
   }
 };
