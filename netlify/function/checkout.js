@@ -2,7 +2,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // 定义您要使用的 Stripe Price ID
-// ⚠️ 修正后的 Price ID: price_1SeeyzGpbs4hTZTLeORhlcoV
+// ⚠️ 确保这个 ID 和您在 Stripe 仪表盘中设置的订阅价格 ID 匹配
 const PRO_MONTHLY_PRICE_ID = 'price_1SeeyzGpbs4hTZTLeORhlcoV'; 
 
 // Netlify Function 的主处理程序
@@ -16,7 +16,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // ⚠️ 关键修改：不再验证前端发送的 priceId，直接使用我们预设的 Price ID
+    // 关键修改：直接使用预设的 Price ID
     const finalPriceId = PRO_MONTHLY_PRICE_ID; 
 
     // 创建 Stripe 结账会话
@@ -30,15 +30,18 @@ exports.handler = async (event, context) => {
       ],
       mode: 'subscription', 
 
-      // 成功和失败后的重定向 URL，请替换成您的网站地址
+      // 成功和失败后的重定向 URL
       success_url: `${process.env.URL}/?success=true`,
       cancel_url: `${process.env.URL}/?canceled=true`,
     });
 
-    // 返回会话 ID 给前端
+    // ✅ 关键修复点：返回 sessionId 和 url 给前端
     return {
       statusCode: 200,
-      body: JSON.stringify({ sessionId: session.id }),
+      body: JSON.stringify({ 
+        sessionId: session.id, 
+        url: session.url // 👈 Stripe 提供的完整支付链接
+      }),
     };
 
   } catch (error) {
