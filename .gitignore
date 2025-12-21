@@ -1,7 +1,26 @@
-# 依赖
+# 依赖包（绝对不能传，非常大）
 /node_modules
-# 编译产物
+/.pnp
+.pnp.js
+
+# 编译产物（这是自动生成的，不需要传）
 /build
-# 本地文件
-.DS_Store
+/dist
+/.next/
+/out/
+
+# 调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 本地环境配置文件（包含你的个人设置或残留密钥）
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 系统垃圾文件
+.DS_Store
+Thumbs.db
