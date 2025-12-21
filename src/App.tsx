@@ -3,7 +3,7 @@ import {
   Upload, Download, Layout, Palette, 
   Loader2, Image as ImageIcon, Layers 
 } from 'lucide-react';
-import * as domToImage from 'dom-to-image-more'; 
+const domToImage = require('dom-to-image-more');
 import { motion } from 'framer-motion';
 
 // --- 类型定义 ---
@@ -202,3 +202,4 @@ export default function App() {
     </div>
   );
 }
+
