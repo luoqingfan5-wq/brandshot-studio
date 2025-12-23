@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 // @ts-ignore
 import domToImage from 'dom-to-image-more'; 
-import { motion } from 'framer-motion';
+// 我删除了这里原本引用的 'framer-motion'，因为它没被使用
 
 // --- 类型定义 ---
 type GradientOption = {
@@ -14,7 +14,6 @@ type GradientOption = {
 };
 
 // --- 配置数据 ---
-// 所有背景现在都是免费可用的
 const GRADIENTS: GradientOption[] = [
   { name: 'Midnight', value: '#0f172a' },
   { name: 'Clean White', value: '#ffffff' },
@@ -46,7 +45,8 @@ export default function App() {
   const [padding, setPadding] = useState(PADDINGS[1].value);
   const [rounded, setRounded] = useState(ROUNDED[2].value);
   const [isExporting, setIsExporting] = useState(false);
-  const [shadow, setShadow] = useState('shadow-2xl');
+  // 我修改了下面这一行，去掉了未使用的 setShadow
+  const [shadow] = useState('shadow-2xl');
 
   const containerRef = useRef<HTMLDivElement>(null);
 
