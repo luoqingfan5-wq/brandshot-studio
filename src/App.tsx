@@ -3,7 +3,8 @@ import {
   Upload, Download, Layout, Palette, 
   Loader2, Image as ImageIcon, Layers 
 } from 'lucide-react';
-const domToImage = require('dom-to-image-more');
+// @ts-ignore
+import domToImage from 'dom-to-image-more'; 
 import { motion } from 'framer-motion';
 
 // --- 类型定义 ---
@@ -13,7 +14,7 @@ type GradientOption = {
 };
 
 // --- 配置数据 ---
-// 所有的颜色现在都是免费可用的
+// 所有背景现在都是免费可用的
 const GRADIENTS: GradientOption[] = [
   { name: 'Midnight', value: '#0f172a' },
   { name: 'Clean White', value: '#ffffff' },
@@ -202,4 +203,3 @@ export default function App() {
     </div>
   );
 }
-
