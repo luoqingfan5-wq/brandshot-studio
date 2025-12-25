@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { 
-  Upload, Download, Layout, Palette, 
+  Upload, Download, Palette, 
   Loader2, Image as ImageIcon, Layers, 
   Maximize, MoveHorizontal, MoveVertical,
   Square
@@ -25,11 +25,11 @@ export default function App() {
   
   // 核心样式状态
   const [gradient, setGradient] = useState(GRADIENTS[2].value);
-  const [paddingX, setPaddingX] = useState(80); 
-  const [paddingY, setPaddingY] = useState(80);
-  const [rounded, setRounded] = useState(20);
+  const [paddingX, setPaddingX] = useState(64); 
+  const [paddingY, setPaddingY] = useState(64);
+  const [rounded, setRounded] = useState(24);
   const [shadow, setShadow] = useState(0.5); 
-  const [showBorder, setShowBorder] = useState(false); // 默认关闭描边
+  const [showBorder, setShowBorder] = useState(false);
   
   const [isExporting, setIsExporting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,12 +47,14 @@ export default function App() {
     if (!containerRef.current) return;
     setIsExporting(true);
     try {
+      // 核心修复：强制背景透明，消除圆角白边
       const dataUrl = await domToImage.toPng(containerRef.current, {
         quality: 1,
-        scale: 3, // 高清导出
+        scale: 3, 
+        bgcolor: 'transparent', // 关键！没有这一行，圆角处永远会有白边
         style: {
-          margin: 0, // 强制清除导出时的外边距
-          transform: 'none' // 防止偏移
+          margin: 0,
+          transform: 'none',
         }
       });
       const link = document.createElement('a');
@@ -81,7 +83,7 @@ export default function App() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* 左侧控制栏 */}
-        <div className="w-80 border-r border-white/5 bg-[#0a0a0a] overflow-y-auto p-6 flex flex-col gap-8 custom-scrollbar shrink-0">
+        <div className="w-80 border-r border-white/5 bg-[#0a0a0a] overflow-y-auto p-6 flex flex-col gap-8 custom-scrollbar shrink-0 z-10">
           
           {/* 上传区域 */}
           <section className="space-y-4">
@@ -124,7 +126,7 @@ export default function App() {
               <section className="space-y-3">
                 <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-widest">
                   <MoveHorizontal size={12} />
-                  <span>Pad X</span>
+                  <span>Pad X: {paddingX}</span>
                 </div>
                 <input 
                   type="range" min="0" max="200" value={paddingX} 
@@ -136,7 +138,7 @@ export default function App() {
               <section className="space-y-3">
                 <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-widest">
                   <MoveVertical size={12} />
-                  <span>Pad Y</span>
+                  <span>Pad Y: {paddingY}</span>
                 </div>
                 <input 
                   type="range" min="0" max="200" value={paddingY} 
@@ -187,48 +189,52 @@ export default function App() {
                 </div>
                 <div className={`w-2 h-2 rounded-full ${showBorder ? 'bg-green-500' : 'bg-neutral-600'}`} />
               </button>
-
           </div>
         </div>
 
-        {/* 右侧预览区 (修复核心：flex布局调整) */}
-        <div className="flex-1 bg-[#050505] p-8 flex items-center justify-center overflow-auto">
+        {/* 右侧预览区 (重构布局) */}
+        <div className="flex-1 bg-[#050505] overflow-auto flex items-center justify-center p-12">
           
-          {/* 关键修复：
-             1. w-fit: 确保宽度由内容撑开，而不是被父容器拉伸
-             2. shrink-0: 防止 Padding 变大时被挤压
+          {/* 外层容器：
+             1. inline-flex: 只有这个属性才能让容器根据 padding 自动撑大，而不是被屏幕挤扁
+             2. w-auto: 移除固定宽度
           */}
           <div 
             ref={containerRef}
-            className="shrink-0 transition-all duration-200 ease-out flex items-center justify-center w-fit"
+            className="inline-flex items-center justify-center transition-all duration-200 ease-out"
             style={{ 
               background: gradient,
               padding: `${paddingY}px ${paddingX}px`, 
+              minWidth: '100px', // 防止太小时消失
+              minHeight: '100px'
             }}
           >
-            {/* 图片容器修复：
-               1. bg-transparent: 移除白色背景，防止圆角处露白
-               2. display: block: 防止图片底部出现幽灵白线
-               3. overflow: hidden: 严格裁切图片
-            */}
+            {/* 图片本身 */}
             <div 
-              className="relative overflow-hidden bg-transparent"
-              style={{ 
-                borderRadius: `${rounded}px`,
-                boxShadow: `0 25px 50px -12px rgba(0,0,0,${shadow}), 0 0 0 1px rgba(0,0,0,${showBorder ? 0.1 : 0})` // 描边逻辑移到 shadow 防止布局抖动
-              }}
+               className="relative transition-all duration-200"
+               style={{ 
+                 fontSize: 0, // 消除 display:block 可能残留的换行间隙
+                 lineHeight: 0,
+                 borderRadius: `${rounded}px`,
+                 boxShadow: `0 20px 50px -10px rgba(0,0,0,${shadow}), 0 0 0 1px rgba(0,0,0,${showBorder ? 0.1 : 0})`,
+                 // 必须加上 background-color: white 吗？ 
+                 // 不需要，如果图片是透明png，背景色应该跟随父元素。但为了圆角裁剪，我们使用 overflow hidden
+                 overflow: 'hidden', 
+                 // 关键：确保这个容器背景是透明的，不要 default white
+                 backgroundColor: 'transparent'
+               }}
             >
               {image ? (
                 <img 
                   src={image} 
                   alt="Preview" 
-                  className="block h-auto max-h-[70vh] max-w-none object-contain"
-                  style={{ display: 'block' }} // 关键：消除底部白线
+                  className="max-h-[70vh] w-auto max-w-none object-contain block" // block 消除底部白线
+                  style={{ display: 'block' }} 
                 />
               ) : (
                 <div className="w-[600px] h-[400px] flex flex-col items-center justify-center text-neutral-500 gap-4 bg-black/20 border border-white/10 backdrop-blur-sm">
                   <ImageIcon size={48} className="opacity-40"/>
-                  <p className="text-sm font-medium">Upload an image to start</p>
+                  <p className="text-sm font-medium">Upload an image</p>
                 </div>
               )}
             </div>
