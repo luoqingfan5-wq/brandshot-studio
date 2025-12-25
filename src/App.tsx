@@ -25,16 +25,11 @@ export default function App() {
   
   // 核心样式状态
   const [gradient, setGradient] = useState(GRADIENTS[2].value);
-  
-  // 恢复：长宽边距分开调整
-  const [paddingX, setPaddingX] = useState(64); 
-  const [paddingY, setPaddingY] = useState(64);
-  
-  const [rounded, setRounded] = useState(16);
-  const [shadow, setShadow] = useState(0.4); // 阴影浓度
-  
-  // 新增：窗口描边开关（解决白色背景看不清问题）
-  const [showBorder, setShowBorder] = useState(true);
+  const [paddingX, setPaddingX] = useState(80); 
+  const [paddingY, setPaddingY] = useState(80);
+  const [rounded, setRounded] = useState(20);
+  const [shadow, setShadow] = useState(0.5); 
+  const [showBorder, setShowBorder] = useState(false); // 默认关闭描边
   
   const [isExporting, setIsExporting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,7 +49,11 @@ export default function App() {
     try {
       const dataUrl = await domToImage.toPng(containerRef.current, {
         quality: 1,
-        scale: 3 // 保持高清
+        scale: 3, // 高清导出
+        style: {
+          margin: 0, // 强制清除导出时的外边距
+          transform: 'none' // 防止偏移
+        }
       });
       const link = document.createElement('a');
       link.download = `brandshot-${Date.now()}.png`;
@@ -82,7 +81,7 @@ export default function App() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* 左侧控制栏 */}
-        <div className="w-80 border-r border-white/5 bg-[#0a0a0a] overflow-y-auto p-6 flex flex-col gap-8 custom-scrollbar">
+        <div className="w-80 border-r border-white/5 bg-[#0a0a0a] overflow-y-auto p-6 flex flex-col gap-8 custom-scrollbar shrink-0">
           
           {/* 上传区域 */}
           <section className="space-y-4">
@@ -120,71 +119,65 @@ export default function App() {
           {/* 尺寸调节区域 */}
           <div className="space-y-6 border-t border-white/5 pt-6">
             
-            {/* 水平边距 */}
-            <section className="space-y-3">
-              <div className="flex justify-between items-center text-neutral-400 text-xs font-bold uppercase tracking-widest">
-                <div className="flex items-center gap-2">
+            {/* Padding Controls */}
+            <div className="grid grid-cols-2 gap-4">
+              <section className="space-y-3">
+                <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-widest">
                   <MoveHorizontal size={12} />
-                  <span>Padding X</span>
+                  <span>Pad X</span>
                 </div>
-                <span className="text-white font-mono">{paddingX}px</span>
-              </div>
-              <input 
-                type="range" min="0" max="150" value={paddingX} 
-                onChange={(e) => setPaddingX(parseInt(e.target.value))}
-                className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
-              />
-            </section>
+                <input 
+                  type="range" min="0" max="200" value={paddingX} 
+                  onChange={(e) => setPaddingX(parseInt(e.target.value))}
+                  className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
+                />
+              </section>
 
-            {/* 垂直边距 */}
-            <section className="space-y-3">
-              <div className="flex justify-between items-center text-neutral-400 text-xs font-bold uppercase tracking-widest">
-                <div className="flex items-center gap-2">
+              <section className="space-y-3">
+                <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-widest">
                   <MoveVertical size={12} />
-                  <span>Padding Y</span>
+                  <span>Pad Y</span>
                 </div>
-                <span className="text-white font-mono">{paddingY}px</span>
-              </div>
-              <input 
-                type="range" min="0" max="150" value={paddingY} 
-                onChange={(e) => setPaddingY(parseInt(e.target.value))}
-                className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
-              />
-            </section>
+                <input 
+                  type="range" min="0" max="200" value={paddingY} 
+                  onChange={(e) => setPaddingY(parseInt(e.target.value))}
+                  className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
+                />
+              </section>
+            </div>
 
             {/* 圆角 */}
             <section className="space-y-3">
               <div className="flex justify-between items-center text-neutral-400 text-xs font-bold uppercase tracking-widest">
                 <div className="flex items-center gap-2">
                   <Layers size={12} />
-                  <span>Rounding</span>
+                  <span>Rounding: {rounded}px</span>
                 </div>
-                <span className="text-white font-mono">{rounded}px</span>
               </div>
               <input 
-                type="range" min="0" max="60" value={rounded} 
+                type="range" min="0" max="100" value={rounded} 
                 onChange={(e) => setRounded(parseInt(e.target.value))}
                 className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
               />
             </section>
 
-            {/* 阴影与描边 */}
-            <section className="space-y-4">
+            {/* 阴影 */}
+            <section className="space-y-3">
               <div className="flex justify-between items-center text-neutral-400 text-xs font-bold uppercase tracking-widest">
                 <div className="flex items-center gap-2">
                   <Maximize size={12} />
-                  <span>Shadow Depth</span>
+                  <span>Shadow: {Math.round(shadow * 100)}%</span>
                 </div>
-                <span className="text-white font-mono">{Math.round(shadow * 100)}%</span>
               </div>
               <input 
                 type="range" min="0" max="1" step="0.05" value={shadow} 
                 onChange={(e) => setShadow(parseFloat(e.target.value))}
                 className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
               />
+            </section>
               
-              {/* 描边开关 */}
-              <button 
+             {/* 描边开关 */}
+             <button 
                 onClick={() => setShowBorder(!showBorder)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-medium transition-all ${showBorder ? 'bg-white/10 border-white/20 text-white' : 'border-white/5 text-neutral-500 hover:bg-white/5'}`}
               >
@@ -194,44 +187,48 @@ export default function App() {
                 </div>
                 <div className={`w-2 h-2 rounded-full ${showBorder ? 'bg-green-500' : 'bg-neutral-600'}`} />
               </button>
-            </section>
 
           </div>
         </div>
 
-        {/* 右侧预览区 */}
-        <div className="flex-1 bg-[#050505] p-12 flex items-center justify-center overflow-auto relative">
+        {/* 右侧预览区 (修复核心：flex布局调整) */}
+        <div className="flex-1 bg-[#050505] p-8 flex items-center justify-center overflow-auto">
+          
+          {/* 关键修复：
+             1. w-fit: 确保宽度由内容撑开，而不是被父容器拉伸
+             2. shrink-0: 防止 Padding 变大时被挤压
+          */}
           <div 
             ref={containerRef}
-            className="transition-all duration-200 ease-out flex items-center justify-center min-w-[100px]"
+            className="shrink-0 transition-all duration-200 ease-out flex items-center justify-center w-fit"
             style={{ 
               background: gradient,
-              padding: `${paddingY}px ${paddingX}px`, // 修复：长宽分开应用
+              padding: `${paddingY}px ${paddingX}px`, 
             }}
           >
-            {/* 图片容器 */}
+            {/* 图片容器修复：
+               1. bg-transparent: 移除白色背景，防止圆角处露白
+               2. display: block: 防止图片底部出现幽灵白线
+               3. overflow: hidden: 严格裁切图片
+            */}
             <div 
-              className="relative transition-all duration-200 overflow-hidden bg-white"
+              className="relative overflow-hidden bg-transparent"
               style={{ 
                 borderRadius: `${rounded}px`,
-                // 修复阴影逻辑：让阴影更柔和自然
-                boxShadow: `0 20px 50px -10px rgba(0,0,0,${shadow}), 0 10px 20px -10px rgba(0,0,0,${shadow * 0.5})`,
-                // 修复白色背景看不清：添加可选的细边框
-                border: showBorder ? '1px solid rgba(0,0,0,0.1)' : 'none'
+                boxShadow: `0 25px 50px -12px rgba(0,0,0,${shadow}), 0 0 0 1px rgba(0,0,0,${showBorder ? 0.1 : 0})` // 描边逻辑移到 shadow 防止布局抖动
               }}
             >
               {image ? (
                 <img 
                   src={image} 
                   alt="Preview" 
-                  className="block w-full h-auto max-h-[800px] max-w-full object-contain"
-                  // 移除任何可能的 padding，让图片完全贴合
-                  style={{ display: 'block' }} 
+                  className="block h-auto max-h-[70vh] max-w-none object-contain"
+                  style={{ display: 'block' }} // 关键：消除底部白线
                 />
               ) : (
-                <div className="w-[500px] h-[300px] flex flex-col items-center justify-center text-neutral-400 gap-3 bg-neutral-900">
-                  <ImageIcon size={40} className="opacity-20"/>
-                  <p className="text-sm font-medium">Please upload an image</p>
+                <div className="w-[600px] h-[400px] flex flex-col items-center justify-center text-neutral-500 gap-4 bg-black/20 border border-white/10 backdrop-blur-sm">
+                  <ImageIcon size={48} className="opacity-40"/>
+                  <p className="text-sm font-medium">Upload an image to start</p>
                 </div>
               )}
             </div>
