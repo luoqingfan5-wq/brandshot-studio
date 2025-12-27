@@ -20,7 +20,7 @@ const ScreenshotStudio: React.FC = () => {
   // --- 文字编辑状态 ---
   const [text, setText] = useState('');
   const [fontFamily, setFontFamily] = useState('Inter');
-  const [fontSize, setFontSize] = useState(72); // 默认字体调大一点
+  const [fontSize, setFontSize] = useState(100); 
   const [textColor, setTextColor] = useState('#ffffff');
   const [textPos, setTextPos] = useState({ x: 50, y: 15 }); 
   
@@ -36,23 +36,15 @@ const ScreenshotStudio: React.FC = () => {
     return () => { document.head.removeChild(link); };
   }, []);
 
-  // --- 恢复经典的 8 种背景 ---
+  // --- 经典的 8 种背景 ---
   const gradients = [
-    // 1. 深海军蓝 (Classic Dark)
     { name: 'Navy', value: '#0f172a' },
-    // 2. 纯白 (White)
     { name: 'White', value: '#ffffff' },
-    // 3. 经典亮蓝 (Brand Blue)
     { name: 'Blue', value: '#3b82f6' },
-    // 4. 粉紫渐变 (Purple Haze)
     { name: 'Purple', value: 'linear-gradient(135deg, #c084fc 0%, #6366f1 100%)' },
-    // 5. 日落橙 (Sunset)
     { name: 'Sunset', value: 'linear-gradient(135deg, #f97316 0%, #ef4444 100%)' },
-    // 6. 紫红渐变 (Pink)
     { name: 'Pink', value: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)' },
-    // 7. 纯黑 (True Black)
     { name: 'Black', value: '#000000' },
-    // 8. 青蓝渐变 (Cyan)
     { name: 'Cyan', value: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' },
   ];
 
@@ -73,12 +65,12 @@ const ScreenshotStudio: React.FC = () => {
     }
   };
 
-  // --- 修复后的下载逻辑 ---
+  // --- 优化后的下载逻辑 ---
   const handleDownload = async () => {
     if (!exportRef.current) return;
     setIsExporting(true); 
 
-    // 增加延迟，确保 DOM 和字体完全渲染，防止文字错位
+    // 增加延迟，确保 DOM 完全渲染
     await new Promise(resolve => setTimeout(resolve, 100)); 
         
     try {
@@ -93,9 +85,9 @@ const ScreenshotStudio: React.FC = () => {
                 transformOrigin: 'top left',
                 width: `${node.offsetWidth}px`,
                 height: `${node.offsetHeight}px`,
-                // 强制去除可能导致错位的边距
                 margin: 0, 
             },
+            // 过滤掉可能引起白框的按钮或交互元素
             filter: (fnode: any) => !(fnode.tagName === 'BUTTON') 
         });
         
@@ -112,14 +104,12 @@ const ScreenshotStudio: React.FC = () => {
   };
 
   const windowBorderClass = shadow === 'none' ? 'border-2 border-black/30' : 'border border-black/10'; 
-  
-  // 根据背景色判断选中框颜色 (如果是白色背景，用灰色框，否则用白色框)
   const getRingColor = (bgValue: string) => bgValue === '#ffffff' ? 'ring-neutral-400' : 'ring-white';
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-sans selection:bg-violet-500/30">
       
-      {/* --- 左侧控制面板 (深色模式保持专业感) --- */}
+      {/* --- 左侧控制面板 --- */}
       <div className="w-full lg:w-96 bg-neutral-900 text-white border-r border-neutral-800 flex flex-col h-screen z-20 shadow-2xl shrink-0">
         
         <div className="p-6 border-b border-neutral-800 bg-neutral-900 sticky top-0 z-10">
@@ -148,7 +138,7 @@ const ScreenshotStudio: React.FC = () => {
             </label>
             </div>
 
-            {/* 2. 背景设置 (经典的 8 种颜色) */}
+            {/* 2. 背景设置 (8色) */}
             <div className="space-y-3">
                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
                     <Palette size={14}/> Background
@@ -268,15 +258,13 @@ const ScreenshotStudio: React.FC = () => {
                 </div>
             </div>
             
-            <div className="h-12"/> {/* 底部留白 */}
+            <div className="h-12"/> 
         </div>
       </div>
 
-      {/* --- 右侧预览区域 (关键修改：改为浅色背景 + 棋盘格) --- */}
-      {/* 这样无论你的背景是黑是白，都能清晰看见边界 */}
+      {/* --- 右侧预览区域 (浅灰+棋盘格) --- */}
       <div className="flex-1 bg-neutral-200 relative overflow-hidden flex flex-col">
          
-         {/* 棋盘格背景层 (High Contrast) */}
          <div className="absolute inset-0 opacity-40 pointer-events-none" 
               style={{ 
                   backgroundImage: 'linear-gradient(45deg, #d4d4d4 25%, transparent 25%), linear-gradient(-45deg, #d4d4d4 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d4d4d4 75%), linear-gradient(-45deg, transparent 75%, #d4d4d4 75%)',
@@ -287,41 +275,48 @@ const ScreenshotStudio: React.FC = () => {
 
         <div className="flex-1 overflow-auto flex items-center justify-center p-10 relative">
              
-             {/* 导出容器 */}
+            {/* 导出容器 */}
             <div 
             ref={exportRef}
             style={{ 
                 width: `${windowWidth + padding * 2}px`,
-                minHeight: `${windowHeight + padding * 2}px`, // 移除额外的 height 计算，防止错位
+                minHeight: `${windowHeight + padding * 2}px`,
                 padding: `${padding}px`, 
                 background: background,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
-                boxSizing: 'border-box' // 确保内边距包含在宽度内
+                boxSizing: 'border-box' 
             }}
             className="transition-all duration-300 ease-out shadow-xl shrink-0"
             >
-                {/* 文字层 - 绝对定位相对于 exportRef */}
+                {/* ⚠️ 核心修复区：文字层 
+                   Explicitly set background to transparent to avoid "white box" glitch
+                */}
                 {text && (
                     <div 
                         style={{
                             position: 'absolute',
                             left: `${textPos.x}%`,
                             top: `${textPos.y}%`,
-                            transform: 'translate(-50%, -50%)', // 这里的变换在 dom-to-image 有时会漂移，但通过下方的 z-index 和父级相对定位已修复
+                            transform: 'translate(-50%, -50%)',
                             color: textColor,
                             fontFamily: fontFamily,
                             fontSize: `${fontSize}px`,
                             textAlign: 'center',
                             zIndex: 50, 
-                            whiteSpace: 'pre', // 防止换行变动
-                            lineHeight: 1, // 锁死行高，防止错位
+                            whiteSpace: 'pre',
+                            lineHeight: 1,
                             pointerEvents: 'none',
-                            width: '100%', // 确保居中对齐参考系正确
-                            maxWidth: '100%',
-                            textShadow: '0 10px 30px rgba(0,0,0,0.3)'
+                            width: '100%',
+                            // ⚠️ 强制透明，防止导出时出现白框
+                            background: 'transparent',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            outline: 'none',
+                            boxShadow: 'none',
+                            textShadow: '0 10px 30px rgba(0,0,0,0.3)' // 阴影加在这里
                         }}
                     >
                         {text}
@@ -338,14 +333,12 @@ const ScreenshotStudio: React.FC = () => {
                 }}
                 className={`bg-white relative overflow-hidden flex flex-col ${windowBorderClass} z-10`}
                 >
-                    {/* Mac 窗口控制点 */}
                     <div className="h-10 bg-white border-b border-black/5 flex items-center px-4 gap-2 shrink-0 select-none">
                         <div className="w-3 h-3 rounded-full bg-[#ff5f56]"/>
                         <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"/>
                         <div className="w-3 h-3 rounded-full bg-[#27c93f]"/>
                     </div>
 
-                    {/* 图片容器 */}
                     <div className="flex-1 w-full h-full bg-neutral-50 flex items-center justify-center relative overflow-hidden">
                         {image ? (
                             <img src={image} alt="Preview" className="w-full h-full object-contain"/>
@@ -361,7 +354,6 @@ const ScreenshotStudio: React.FC = () => {
         </div>
       </div>
 
-      {/* 导出按钮 */}
       <button 
         onClick={handleDownload}
         disabled={isExporting || !image}
