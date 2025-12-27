@@ -12,7 +12,9 @@ const ScreenshotStudio: React.FC = () => {
   const [windowWidth, setWindowWidth] = useState(1000); 
   const [windowHeight, setWindowHeight] = useState(800); 
   const [borderRadius, setBorderRadius] = useState(16);
-  const [shadow, setShadow] = useState('0 20px 25px rgba(0, 0, 0, 0.3)'); 
+  
+  // 1. 修复：初始值现在完全匹配 "Medium" 选项的值，确保下拉菜单显示正确
+  const [shadow, setShadow] = useState('0 25px 50px -12px rgba(0, 0, 0, 0.5)'); 
   
   // 背景色 (默认选第一个深蓝色)
   const [background, setBackground] = useState('#0f172a'); 
@@ -70,12 +72,11 @@ const ScreenshotStudio: React.FC = () => {
     if (!exportRef.current) return;
     setIsExporting(true); 
 
-    // 增加延迟，确保 DOM 完全渲染
     await new Promise(resolve => setTimeout(resolve, 100)); 
         
     try {
         const node = exportRef.current;
-        const scale = 2; // 导出 2倍图，保持高清
+        const scale = 2; 
         
         const dataUrl = await domToImage.toPng(node, {
             width: node.offsetWidth * scale,
@@ -87,7 +88,6 @@ const ScreenshotStudio: React.FC = () => {
                 height: `${node.offsetHeight}px`,
                 margin: 0, 
             },
-            // 过滤掉可能引起白框的按钮或交互元素
             filter: (fnode: any) => !(fnode.tagName === 'BUTTON') 
         });
         
@@ -194,6 +194,7 @@ const ScreenshotStudio: React.FC = () => {
                     >
                         <option value="none">No Shadow</option>
                         <option value="0 10px 15px rgba(0, 0, 0, 0.2)">Soft</option>
+                        {/* 这里的 value 必须和 useState 初始值一模一样 */}
                         <option value="0 25px 50px -12px rgba(0, 0, 0, 0.5)">Medium</option>
                         <option value="0 50px 70px -12px rgba(0, 0, 0, 0.7)">Heavy</option>
                     </select>
@@ -291,9 +292,7 @@ const ScreenshotStudio: React.FC = () => {
             }}
             className="transition-all duration-300 ease-out shadow-xl shrink-0"
             >
-                {/* ⚠️ 核心修复区：文字层 
-                   Explicitly set background to transparent to avoid "white box" glitch
-                */}
+                {/* 文字层 (修复了白框问题) */}
                 {text && (
                     <div 
                         style={{
@@ -310,13 +309,12 @@ const ScreenshotStudio: React.FC = () => {
                             lineHeight: 1,
                             pointerEvents: 'none',
                             width: '100%',
-                            // ⚠️ 强制透明，防止导出时出现白框
-                            background: 'transparent',
+                            background: 'transparent', // 确保透明
                             backgroundColor: 'transparent',
                             border: 'none',
                             outline: 'none',
                             boxShadow: 'none',
-                            textShadow: '0 10px 30px rgba(0,0,0,0.3)' // 阴影加在这里
+                            textShadow: '0 10px 30px rgba(0,0,0,0.3)'
                         }}
                     >
                         {text}
