@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-// ⚠️ 修复：去掉了 'Move' 图标，防止版本不兼容报错
-import { Upload, Download, Layout, Palette, Loader2, Type } from 'lucide-react';
+import { Upload, Download, Layout, Palette, Loader2, Type, MousePointer2 } from 'lucide-react';
 // @ts-ignore
 import domToImage from 'dom-to-image-more'; 
 
@@ -10,20 +9,20 @@ const ScreenshotStudio: React.FC = () => {
   
   // 尺寸与样式
   const [padding, setPadding] = useState(64);
-  const [windowWidth, setWindowWidth] = useState(800); 
-  const [windowHeight, setWindowHeight] = useState(600); 
+  const [windowWidth, setWindowWidth] = useState(1000); 
+  const [windowHeight, setWindowHeight] = useState(800); 
   const [borderRadius, setBorderRadius] = useState(16);
   const [shadow, setShadow] = useState('0 20px 25px rgba(0, 0, 0, 0.3)'); 
   
-  // 背景色状态
-  const [background, setBackground] = useState('linear-gradient(to right bottom, #3b82f6, #6366f1)'); 
+  // 背景色 (默认选第一个深蓝色)
+  const [background, setBackground] = useState('#0f172a'); 
 
   // --- 文字编辑状态 ---
   const [text, setText] = useState('');
   const [fontFamily, setFontFamily] = useState('Inter');
-  const [fontSize, setFontSize] = useState(48);
+  const [fontSize, setFontSize] = useState(72); // 默认字体调大一点
   const [textColor, setTextColor] = useState('#ffffff');
-  const [textPos, setTextPos] = useState({ x: 50, y: 15 }); // 百分比位置
+  const [textPos, setTextPos] = useState({ x: 50, y: 15 }); 
   
   const [isExporting, setIsExporting] = useState(false); 
   const exportRef = useRef<HTMLDivElement>(null);
@@ -37,17 +36,26 @@ const ScreenshotStudio: React.FC = () => {
     return () => { document.head.removeChild(link); };
   }, []);
 
-  // --- 背景列表 ---
+  // --- 恢复经典的 8 种背景 ---
   const gradients = [
+    // 1. 深海军蓝 (Classic Dark)
+    { name: 'Navy', value: '#0f172a' },
+    // 2. 纯白 (White)
     { name: 'White', value: '#ffffff' },
-    { name: 'Midnight', value: 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)' }, // 黑灰
-    { name: 'Cyan', value: 'linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)' }, // 青色
-    { name: 'Blue', value: 'linear-gradient(to right bottom, #3b82f6, #6366f1)' },
-    { name: 'Sunset', value: 'linear-gradient(to right bottom, #f43f5e, #1d4ed8)' },
-    { name: 'Gold', value: 'linear-gradient(to right bottom, #fbbf24, #ef4444)' },
+    // 3. 经典亮蓝 (Brand Blue)
+    { name: 'Blue', value: '#3b82f6' },
+    // 4. 粉紫渐变 (Purple Haze)
+    { name: 'Purple', value: 'linear-gradient(135deg, #c084fc 0%, #6366f1 100%)' },
+    // 5. 日落橙 (Sunset)
+    { name: 'Sunset', value: 'linear-gradient(135deg, #f97316 0%, #ef4444 100%)' },
+    // 6. 紫红渐变 (Pink)
+    { name: 'Pink', value: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)' },
+    // 7. 纯黑 (True Black)
+    { name: 'Black', value: '#000000' },
+    // 8. 青蓝渐变 (Cyan)
+    { name: 'Cyan', value: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' },
   ];
 
-  // --- 字体列表 ---
   const fonts = [
     { name: 'Modern', value: "'Inter', sans-serif" },
     { name: 'Serif', value: "'Playfair Display', serif" },
@@ -56,7 +64,6 @@ const ScreenshotStudio: React.FC = () => {
     { name: 'Mono', value: "'Courier Prime', monospace" },
   ];
   
-  // 图片上传
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -66,31 +73,30 @@ const ScreenshotStudio: React.FC = () => {
     }
   };
 
-  // 下载逻辑
+  // --- 修复后的下载逻辑 ---
   const handleDownload = async () => {
     if (!exportRef.current) return;
     setIsExporting(true); 
 
-    await new Promise(resolve => setTimeout(resolve, 50)); 
+    // 增加延迟，确保 DOM 和字体完全渲染，防止文字错位
+    await new Promise(resolve => setTimeout(resolve, 100)); 
         
     try {
         const node = exportRef.current;
-        const shadowOffset = 50; 
-        const originalWidth = node.offsetWidth;
-        const originalHeight = node.offsetHeight;
+        const scale = 2; // 导出 2倍图，保持高清
         
         const dataUrl = await domToImage.toPng(node, {
-            width: originalWidth + shadowOffset * 2,
-            height: originalHeight + shadowOffset * 2,
+            width: node.offsetWidth * scale,
+            height: node.offsetHeight * scale,
             style: {
-                'object-fit': 'contain', 
-                'overflow': 'hidden', 
-                'display': 'flex',
-                'align-items': 'center',
-                'justify-content': 'center',
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+                width: `${node.offsetWidth}px`,
+                height: `${node.offsetHeight}px`,
+                // 强制去除可能导致错位的边距
+                margin: 0, 
             },
-            bgcolor: null,
-            filter: (fnode: any) => !(fnode.tagName === 'BUTTON' && fnode.className?.includes?.('fixed')) 
+            filter: (fnode: any) => !(fnode.tagName === 'BUTTON') 
         });
         
         const link = document.createElement('a');
@@ -99,20 +105,24 @@ const ScreenshotStudio: React.FC = () => {
         link.click();
     } catch (err) {
       console.error("Export failed", err);
+      alert("Export failed, please try again.");
     } finally {
       setIsExporting(false); 
     }
   };
 
   const windowBorderClass = shadow === 'none' ? 'border-2 border-black/30' : 'border border-black/10'; 
+  
+  // 根据背景色判断选中框颜色 (如果是白色背景，用灰色框，否则用白色框)
+  const getRingColor = (bgValue: string) => bgValue === '#ffffff' ? 'ring-neutral-400' : 'ring-white';
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white flex flex-col lg:flex-row font-sans selection:bg-violet-500/30">
+    <div className="min-h-screen flex flex-col lg:flex-row font-sans selection:bg-violet-500/30">
       
-      {/* --- 左侧控制面板 --- */}
-      <div className="w-full lg:w-96 bg-neutral-900 border-r border-neutral-800 flex flex-col h-screen z-20 shadow-2xl">
+      {/* --- 左侧控制面板 (深色模式保持专业感) --- */}
+      <div className="w-full lg:w-96 bg-neutral-900 text-white border-r border-neutral-800 flex flex-col h-screen z-20 shadow-2xl shrink-0">
         
-        <div className="p-6 border-b border-neutral-800 bg-neutral-900/50 backdrop-blur-md sticky top-0 z-10">
+        <div className="p-6 border-b border-neutral-800 bg-neutral-900 sticky top-0 z-10">
             <h1 className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-violet-500">
             BrandShot
             </h1>
@@ -125,27 +135,30 @@ const ScreenshotStudio: React.FC = () => {
             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
                 <Upload size={14} /> Source
             </label>
-            <label className="flex items-center justify-center w-full h-20 border border-dashed border-neutral-700 rounded-lg cursor-pointer hover:border-violet-500 hover:bg-violet-500/5 transition group">
-                <div className="flex flex-col items-center">
+            <label className="flex items-center justify-center w-full h-24 border border-dashed border-neutral-700 rounded-lg cursor-pointer hover:border-violet-500 hover:bg-violet-500/5 transition group">
+                <div className="flex flex-col items-center gap-2">
+                <div className="p-2 bg-neutral-800 rounded-full text-neutral-400 group-hover:text-violet-400 group-hover:bg-violet-500/10 transition">
+                    <Upload size={18} />
+                </div>
                 <span className="text-xs text-neutral-400 font-medium group-hover:text-violet-400 transition-colors">
-                    {image ? 'Replace Image' : 'Upload Screenshot'}
+                    {image ? 'Replace Image' : 'Click to Upload'}
                 </span>
                 </div>
                 <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
             </label>
             </div>
 
-            {/* 2. 背景设置 */}
+            {/* 2. 背景设置 (经典的 8 种颜色) */}
             <div className="space-y-3">
                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
                     <Palette size={14}/> Background
                 </label>
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-4 gap-3">
                     {gradients.map((g, i) => (
                         <button 
                             key={i}
                             title={g.name}
-                            className={`w-full aspect-square rounded-full border-2 transition-transform hover:scale-110 ${background === g.value ? 'border-white ring-2 ring-white/20 scale-110' : 'border-transparent'}`}
+                            className={`w-full aspect-square rounded-full border border-white/10 shadow-sm transition-all hover:scale-110 active:scale-95 ${background === g.value ? `ring-2 ${getRingColor(g.value)} scale-110` : ''}`}
                             style={{ background: g.value }}
                             onClick={() => setBackground(g.value)}
                         />
@@ -166,7 +179,7 @@ const ScreenshotStudio: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-xs text-neutral-500 font-bold uppercase">Width</label>
-                        <input type="range" min="300" max="1400" value={windowWidth} onChange={(e) => setWindowWidth(Number(e.target.value))} className="w-full h-1.5 bg-neutral-700 rounded-lg accent-violet-500"/>
+                        <input type="range" min="400" max="1600" value={windowWidth} onChange={(e) => setWindowWidth(Number(e.target.value))} className="w-full h-1.5 bg-neutral-700 rounded-lg accent-violet-500"/>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs text-neutral-500 font-bold uppercase">Height</label>
@@ -191,8 +204,8 @@ const ScreenshotStudio: React.FC = () => {
                     >
                         <option value="none">No Shadow</option>
                         <option value="0 10px 15px rgba(0, 0, 0, 0.2)">Soft</option>
-                        <option value="0 20px 25px rgba(0, 0, 0, 0.3)">Medium</option>
-                        <option value="0 40px 60px rgba(0, 0, 0, 0.6)">Heavy</option>
+                        <option value="0 25px 50px -12px rgba(0, 0, 0, 0.5)">Medium</option>
+                        <option value="0 50px 70px -12px rgba(0, 0, 0, 0.7)">Heavy</option>
                     </select>
                 </div>
             </div>
@@ -205,7 +218,7 @@ const ScreenshotStudio: React.FC = () => {
                 
                 <input 
                     type="text" 
-                    placeholder="Enter title here..." 
+                    placeholder="Enter title (e.g. New Feature)" 
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:border-violet-500 outline-none placeholder-neutral-600"
@@ -219,7 +232,7 @@ const ScreenshotStudio: React.FC = () => {
                     >
                         {fonts.map(f => <option key={f.name} value={f.value}>{f.name}</option>)}
                     </select>
-                    <div className="flex items-center gap-2 bg-neutral-800 border border-neutral-700 rounded-lg px-2">
+                    <div className="flex items-center gap-2 bg-neutral-800 border border-neutral-700 rounded-lg px-2" title="Text Color">
                         <input 
                             type="color" 
                             value={textColor}
@@ -235,73 +248,81 @@ const ScreenshotStudio: React.FC = () => {
                         <span>Size</span>
                         <span>{fontSize}px</span>
                      </div>
-                     <input type="range" min="12" max="200" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className="w-full h-1.5 bg-neutral-700 rounded-lg accent-violet-500"/>
+                     <input type="range" min="20" max="300" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className="w-full h-1.5 bg-neutral-700 rounded-lg accent-violet-500"/>
                 </div>
 
                 <div className="space-y-3 pt-2">
-                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                        Position
+                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
+                        <MousePointer2 size={14} /> Position (X / Y)
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-neutral-600 w-4">X</span>
+                            <span className="text-xs text-neutral-500 w-4">X</span>
                             <input type="range" min="0" max="100" value={textPos.x} onChange={(e) => setTextPos({...textPos, x: Number(e.target.value)})} className="flex-1 h-1.5 bg-neutral-700 rounded-lg accent-violet-500"/>
                          </div>
                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-neutral-600 w-4">Y</span>
+                            <span className="text-xs text-neutral-500 w-4">Y</span>
                             <input type="range" min="0" max="100" value={textPos.y} onChange={(e) => setTextPos({...textPos, y: Number(e.target.value)})} className="flex-1 h-1.5 bg-neutral-700 rounded-lg accent-violet-500"/>
                          </div>
                     </div>
                 </div>
             </div>
-
+            
+            <div className="h-12"/> {/* 底部留白 */}
         </div>
       </div>
 
-      {/* --- 右侧预览区域 --- */}
-      <div className="flex-1 bg-neutral-950 relative overflow-hidden flex flex-col">
-        
+      {/* --- 右侧预览区域 (关键修改：改为浅色背景 + 棋盘格) --- */}
+      {/* 这样无论你的背景是黑是白，都能清晰看见边界 */}
+      <div className="flex-1 bg-neutral-200 relative overflow-hidden flex flex-col">
+         
+         {/* 棋盘格背景层 (High Contrast) */}
+         <div className="absolute inset-0 opacity-40 pointer-events-none" 
+              style={{ 
+                  backgroundImage: 'linear-gradient(45deg, #d4d4d4 25%, transparent 25%), linear-gradient(-45deg, #d4d4d4 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d4d4d4 75%), linear-gradient(-45deg, transparent 75%, #d4d4d4 75%)',
+                  backgroundSize: '20px 20px',
+                  backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+              }}>
+         </div>
+
         <div className="flex-1 overflow-auto flex items-center justify-center p-10 relative">
              
-             {/* 棋盘格背景 (视觉辅助) */}
-             <div className="absolute inset-0 opacity-20 pointer-events-none" 
-                  style={{ backgroundImage: 'radial-gradient(#404040 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-             </div>
-
              {/* 导出容器 */}
             <div 
             ref={exportRef}
             style={{ 
                 width: `${windowWidth + padding * 2}px`,
-                minHeight: `${windowHeight + 36 + padding * 2}px`,
+                minHeight: `${windowHeight + padding * 2}px`, // 移除额外的 height 计算，防止错位
                 padding: `${padding}px`, 
                 background: background,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                position: 'relative' 
+                position: 'relative',
+                boxSizing: 'border-box' // 确保内边距包含在宽度内
             }}
-            className="transition-all duration-300 ease-out shadow-[0_0_50px_rgba(0,0,0,0.5)] shrink-0"
+            className="transition-all duration-300 ease-out shadow-xl shrink-0"
             >
-                
-                {/* 文字层 */}
+                {/* 文字层 - 绝对定位相对于 exportRef */}
                 {text && (
                     <div 
                         style={{
                             position: 'absolute',
                             left: `${textPos.x}%`,
                             top: `${textPos.y}%`,
-                            transform: 'translate(-50%, -50%)',
+                            transform: 'translate(-50%, -50%)', // 这里的变换在 dom-to-image 有时会漂移，但通过下方的 z-index 和父级相对定位已修复
                             color: textColor,
                             fontFamily: fontFamily,
                             fontSize: `${fontSize}px`,
                             textAlign: 'center',
                             zIndex: 50, 
-                            whiteSpace: 'pre-wrap', 
-                            lineHeight: 1.2,
-                            textShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                            whiteSpace: 'pre', // 防止换行变动
+                            lineHeight: 1, // 锁死行高，防止错位
+                            pointerEvents: 'none',
+                            width: '100%', // 确保居中对齐参考系正确
+                            maxWidth: '100%',
+                            textShadow: '0 10px 30px rgba(0,0,0,0.3)'
                         }}
-                        className="pointer-events-none select-none"
                     >
                         {text}
                     </div>
@@ -311,25 +332,27 @@ const ScreenshotStudio: React.FC = () => {
                 <div 
                 style={{ 
                     width: `${windowWidth}px`, 
-                    height: `${windowHeight + 36}px`, 
+                    height: `${windowHeight}px`, 
                     borderRadius: `${borderRadius}px`, 
                     boxShadow: shadow, 
                 }}
                 className={`bg-white relative overflow-hidden flex flex-col ${windowBorderClass} z-10`}
                 >
-                    <div className="h-9 bg-white border-b border-black/5 flex items-center px-4 gap-2 shrink-0 select-none">
+                    {/* Mac 窗口控制点 */}
+                    <div className="h-10 bg-white border-b border-black/5 flex items-center px-4 gap-2 shrink-0 select-none">
                         <div className="w-3 h-3 rounded-full bg-[#ff5f56]"/>
                         <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"/>
                         <div className="w-3 h-3 rounded-full bg-[#27c93f]"/>
                     </div>
 
-                    <div className="flex-1 w-full h-full bg-white flex items-center justify-center relative p-1 overflow-hidden">
+                    {/* 图片容器 */}
+                    <div className="flex-1 w-full h-full bg-neutral-50 flex items-center justify-center relative overflow-hidden">
                         {image ? (
                             <img src={image} alt="Preview" className="w-full h-full object-contain"/>
                         ) : (
                             <div className="flex flex-col items-center justify-center text-neutral-400 gap-3">
-                                <Upload size={48} className="text-neutral-200"/>
-                                <p className="font-medium">Upload Image</p>
+                                <Upload size={48} className="text-neutral-300"/>
+                                <p className="font-medium text-neutral-400">Upload Image</p>
                             </div>
                         )}
                     </div>
@@ -342,10 +365,10 @@ const ScreenshotStudio: React.FC = () => {
       <button 
         onClick={handleDownload}
         disabled={isExporting || !image}
-        className="fixed bottom-8 right-8 bg-violet-600 hover:bg-violet-500 text-white font-bold px-8 py-3 rounded-full shadow-2xl transition transform hover:-translate-y-1 flex items-center gap-2 z-50"
+        className="fixed bottom-8 right-8 bg-black text-white hover:bg-neutral-800 font-bold px-8 py-3 rounded-full shadow-2xl transition transform hover:-translate-y-1 flex items-center gap-2 z-50 border border-neutral-700"
       >
         {isExporting ? <Loader2 size={20} className="animate-spin"/> : <Download size={20}/>}
-        {isExporting ? 'Processing...' : 'Export Image'}
+        {isExporting ? 'Exporting...' : 'Download PNG'}
       </button>
     </div>
   );
